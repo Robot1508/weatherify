@@ -49,7 +49,7 @@ let sunTimeline = null;
 
 // Event Listeners
 searchBtn.addEventListener('click', handleSearch);
-locateBtn.addEventListener('click', handleLocate); // ✅ NEW
+locateBtn.addEventListener('click', handleLocate);
 
 cityInput.addEventListener('keypress', (e) => {
     if (e.key === 'Enter') {
@@ -80,6 +80,11 @@ document.addEventListener('click', (e) => {
 
 // ✅ AUTO LOAD (UPDATED)
 window.addEventListener('DOMContentLoaded', () => {
+    // Initialize Lucide Icons
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+
     if (navigator.geolocation) {
         handleLocate();
     } else {
@@ -95,10 +100,10 @@ function handleSearch() {
     }
 }
 
-// 📍 LOCATE ME FEATURE (CORE)
+// 📍 LOCATE ME FEATURE
 async function handleLocate() {
     if (!navigator.geolocation) {
-        showError("Geolocation is not supported.");
+        showError("Geolocation is not supported by your browser.");
         return;
     }
 
@@ -111,71 +116,61 @@ async function handleLocate() {
     navigator.geolocation.getCurrentPosition(
         async (position) => {
             const { latitude, longitude } = position.coords;
-
-            try {
-                const [currentResponse, forecastResponse] = await Promise.all([
-                    fetch(`${API_BASE}/weather?lat=${latitude}&lon=${longitude}&units=metric`),
-                    fetch(`${API_BASE}/forecast?lat=${latitude}&lon=${longitude}&units=metric`)
-                ]);
-
-                if (!currentResponse.ok) {
-                    const err = await parseJsonSafe(currentResponse);
-                    throw new Error(err?.message || "Weather fetch failed");
-                }
-
-                if (!forecastResponse.ok) {
-                    const err = await parseJsonSafe(forecastResponse);
-                    throw new Error(err?.message || "Forecast fetch failed");
-                }
-
-                const currentData = await currentResponse.json();
-                const forecastData = await forecastResponse.json();
-
-                updateUI(currentData);
-                updateForecastUI(forecastData);
-                showWeather();
-
-            } catch (error) {
-                console.error(error);
-                showError(error.message);
-            } finally {
-                hideLoading();
-                locateBtn.disabled = false;
-            }
+            await fetchWeatherData(null, { lat: latitude, lon: longitude });
+            locateBtn.disabled = false;
         },
         (error) => {
+            let msg = "Unable to retrieve your location.";
             if (error.code === error.PERMISSION_DENIED) {
-                showError("Location permission denied.");
-            } else {
-                showError("Unable to retrieve location.");
+                msg = "Location access denied. Please allow location permissions in your browser settings to use this feature.";
+            } else if (error.code === error.POSITION_UNAVAILABLE) {
+                msg = "Location information is unavailable.";
+            } else if (error.code === error.TIMEOUT) {
+                msg = "Request to get user location timed out.";
             }
-
+            
+            showError(msg);
             hideLoading();
             locateBtn.disabled = false;
-        }
+            
+            // Fallback to default city if first load
+            if (!cityName.textContent || cityName.textContent === 'City') {
+                fetchWeatherData('London');
+            }
+        },
+        { timeout: 10000 }
     );
 }
 
-// 🌐 FETCH WEATHER (CITY)
-async function fetchWeatherData(city) {
+// 🌐 FETCH WEATHER (REFACTORED)
+async function fetchWeatherData(city = null, coords = null) {
     showLoading();
     hideError();
     hideWeather();
 
     try {
+        let queryParams = '';
+        if (coords) {
+            queryParams = `lat=${coords.lat}&lon=${coords.lon}`;
+        } else if (city) {
+            queryParams = `q=${encodeURIComponent(city)}`;
+        } else {
+            throw new Error("No city or coordinates provided.");
+        }
+
         const [currentResponse, forecastResponse] = await Promise.all([
-            fetch(`${API_BASE}/weather?q=${encodeURIComponent(city)}&units=metric`),
-            fetch(`${API_BASE}/forecast?q=${encodeURIComponent(city)}&units=metric`)
+            fetch(`${API_BASE}/weather?${queryParams}&units=metric`),
+            fetch(`${API_BASE}/forecast?${queryParams}&units=metric`)
         ]);
 
         if (!currentResponse.ok) {
             const err = await parseJsonSafe(currentResponse);
-            throw new Error(err?.message || "City not found");
+            throw new Error(err?.message || "Weather data not found.");
         }
 
         if (!forecastResponse.ok) {
             const err = await parseJsonSafe(forecastResponse);
-            throw new Error(err?.message || "Forecast unavailable");
+            throw new Error(err?.message || "Forecast data unavailable.");
         }
 
         const currentData = await currentResponse.json();

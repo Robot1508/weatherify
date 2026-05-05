@@ -172,14 +172,16 @@ h1 {
     color: #cbd5e0;
 }
 
-#search-btn {
+#search-btn, #locate-btn {
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     border: none;
     border-radius: 14px;
-    padding: 14px 20px;
+    padding: 14px;
+    width: 50px;
+    height: 50px;
     cursor: pointer;
     color: white;
-    transition: all 0.3s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -187,13 +189,29 @@ h1 {
     box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
-#search-btn:hover {
-    transform: translateY(-3px);
+#search-btn:hover, #locate-btn:hover {
+    transform: translateY(-3px) scale(1.05);
     box-shadow: 0 8px 25px rgba(102, 126, 234, 0.5);
+    background: linear-gradient(135deg, #764ba2 0%, #667eea 100%);
 }
 
-#search-btn:active {
-    transform: translateY(-1px);
+#search-btn:active, #locate-btn:active {
+    transform: translateY(-1px) scale(0.95);
+}
+
+#locate-btn {
+    background: linear-gradient(135deg, #4fd1c5 0%, #38b2ac 100%);
+    box-shadow: 0 4px 15px rgba(79, 209, 197, 0.3);
+}
+
+#locate-btn:hover {
+    box-shadow: 0 8px 25px rgba(79, 209, 197, 0.5);
+    background: linear-gradient(135deg, #38b2ac 0%, #4fd1c5 100%);
+}
+
+#search-btn i, #locate-btn i {
+    width: 20px;
+    height: 20px;
 }
 
 /* Autocomplete Suggestions */
@@ -201,7 +219,7 @@ h1 {
     position: absolute;
     top: calc(100% + 12px);
     left: 0;
-    right: 70px;
+    right: 130px;
     background: white;
     border-radius: 14px;
     box-shadow: 0 15px 50px rgba(0, 0, 0, 0.2);
